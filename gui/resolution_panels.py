@@ -2,12 +2,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 class ScrollableFrame(tk.Frame):
-    """Un frame contenedor con scrollbar vertical automático."""
+    """Un frame contenedor con scrollbars vertical y horizontal independientes."""
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         
         self.canvas = tk.Canvas(self, borderwidth=0, highlightthickness=0, bg="#ffffff")
-        self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.v_scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.h_scrollbar = tk.Scrollbar(self, orient="horizontal", command=self.canvas.xview)
         self.scrollable_content = tk.Frame(self.canvas, bg="#ffffff")
         
         self.scrollable_content.bind(
@@ -19,22 +20,23 @@ class ScrollableFrame(tk.Frame):
         
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_content, anchor="nw")
         
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        self.canvas.configure(
+            yscrollcommand=self.v_scrollbar.set,
+            xscrollcommand=self.h_scrollbar.set
+        )
         
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
+        # Grid layout para ubicar el canvas y las barras de desplazamiento
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.v_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.h_scrollbar.grid(row=1, column=0, sticky="ew")
         
-        # Ajustar ancho del frame interno al del canvas
-        self.canvas.bind('<Configure>', self._on_canvas_configure)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         # Habilitar scroll con rueda del mouse
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
-    def _on_canvas_configure(self, event):
-        self.canvas.itemconfig(self.canvas_window, width=event.width)
-
     def _on_mousewheel(self, event):
-        # Desplazar solo si el canvas está visible y enfocado
         if self.canvas.winfo_exists():
             self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
@@ -80,7 +82,7 @@ class RegressivePanel(tk.Frame):
         )
         self.result_label.pack(side=tk.LEFT, padx=15, fill=tk.BOTH, expand=True)
 
-        # Contenedor scrollable para las tablas didácticas
+        # Contenedor scrollable bidimensional para las tablas
         self.scroll_frame = ScrollableFrame(self)
         self.scroll_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
 
@@ -130,32 +132,26 @@ class RegressivePanel(tk.Frame):
                 grid_frame.pack(anchor="w", pady=5)
                 
                 # Encabezados de columna
-                # Esquina vacía de la tabla (Fila \ Columna)
                 lbl = tk.Label(grid_frame, text="Estado (u) \\ Destino (v)", font=("Helvetica", 9, "bold"), bg="#f1f3f4", width=22, height=2, bd=1, relief=tk.SOLID)
                 lbl.grid(row=0, column=0, sticky="nsew")
                 
-                # Columnas de destino (nodos de la etapa siguiente)
                 for col_idx, v_id in enumerate(nodos_destino, start=1):
                     lbl = tk.Label(grid_frame, text=f"Nodo {v_id}", font=("Helvetica", 9, "bold"), bg="#f1f3f4", width=15, height=2, bd=1, relief=tk.SOLID)
                     lbl.grid(row=0, column=col_idx, sticky="nsew")
                     
-                # Columnas adicionales de óptimos
                 lbl_opt_val = tk.Label(grid_frame, text="Costo Óptimo f*(u)", font=("Helvetica", 9, "bold"), bg="#e8f0fe", fg="#1a73e8", width=18, height=2, bd=1, relief=tk.SOLID)
                 lbl_opt_val.grid(row=0, column=len(nodos_destino) + 1, sticky="nsew")
                 
                 lbl_opt_dec = tk.Label(grid_frame, text="Decisión Óptima v*", font=("Helvetica", 9, "bold"), bg="#e8f0fe", fg="#1a73e8", width=18, height=2, bd=1, relief=tk.SOLID)
                 lbl_opt_dec.grid(row=0, column=len(nodos_destino) + 2, sticky="nsew")
                 
-                # Llenar las filas (nodos de origen)
+                # Llenar las filas
                 for row_idx, u_id in enumerate(nodos_origen, start=1):
-                    # Nombre de la fila
                     lbl = tk.Label(grid_frame, text=f"Nodo {u_id}", font=("Helvetica", 9, "bold"), bg="#f8f9fa", width=22, height=2, bd=1, relief=tk.SOLID)
                     lbl.grid(row=row_idx, column=0, sticky="nsew")
                     
-                    # Decisión óptima calculada para este nodo u
                     best_decision = optima[u_id]["decision"]
                     
-                    # Celda de transición a cada destino v
                     for col_idx, v_id in enumerate(nodos_destino, start=1):
                         cell_info = table_data[u_id][v_id]
                         
@@ -164,14 +160,12 @@ class RegressivePanel(tk.Frame):
                             acum = cell_info["acumulado_siguiente"]
                             suma = cell_info["suma"]
                             
-                            # Formatear números
                             peso_s = str(int(peso)) if peso.is_integer() else f"{peso:.1f}"
                             acum_s = str(int(acum)) if acum.is_integer() else f"{acum:.1f}"
                             suma_s = str(int(suma)) if suma.is_integer() else f"{suma:.1f}"
                             
                             text_cell = f"{peso_s} + {acum_s} = {suma_s}"
                             
-                            # Resaltar en verde si es la decisión óptima elegida
                             bg_color = "#e6f4ea" if v_id == best_decision else "#ffffff"
                             fg_color = "#137333" if v_id == best_decision else "#3c4043"
                             weight_font = "bold" if v_id == best_decision else "normal"
@@ -187,7 +181,6 @@ class RegressivePanel(tk.Frame):
                         )
                         lbl.grid(row=row_idx, column=col_idx, sticky="nsew")
                         
-                    # Celdas del óptimo f*(u)
                     opt_val = optima[u_id]["costo"]
                     if opt_val in (float('inf'), float('-inf')):
                         opt_val_s = "No alc."
@@ -200,7 +193,6 @@ class RegressivePanel(tk.Frame):
                     )
                     lbl_val.grid(row=row_idx, column=len(nodos_destino) + 1, sticky="nsew")
                     
-                    # Celda de decisión óptima v*
                     lbl_dec = tk.Label(
                         grid_frame, text=f"Ir a Nodo {best_decision}" if best_decision else "—", 
                         bg="#e8f0fe", fg="#1a73e8", font=("Helvetica", 9, "bold"), 
@@ -253,7 +245,7 @@ class ProgressivePanel(tk.Frame):
         )
         self.result_label.pack(side=tk.LEFT, padx=15, fill=tk.BOTH, expand=True)
 
-        # Contenedor scrollable para los pasos lineales
+        # Contenedor scrollable bidimensional para los pasos
         self.scroll_frame = ScrollableFrame(self)
         self.scroll_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
 
@@ -282,7 +274,6 @@ class ProgressivePanel(tk.Frame):
             # 2. Dibujar el paso a paso del vector lineal
             parent_frame = self.scroll_frame.scrollable_content
             
-            # Dibujar tarjetas de paso para cada nodo procesado
             for step_idx, step in enumerate(response.vector_history):
                 node_id = step["step_node"]
                 comparisons = step["comparisons"]
@@ -297,7 +288,6 @@ class ProgressivePanel(tk.Frame):
                 )
                 step_card.pack(fill=tk.X, pady=8, padx=5)
                 
-                # Si es el origen (nodo 1)
                 if node_id == 1:
                     lbl = tk.Label(
                         step_card, 
@@ -306,7 +296,6 @@ class ProgressivePanel(tk.Frame):
                     )
                     lbl.pack(fill=tk.X, pady=2)
                 else:
-                    # Mostrar la pregunta proactiva
                     lbl_question = tk.Label(
                         step_card,
                         text="¿Cuál es el camino óptimo desde el origen hasta mí mismo?",
@@ -314,7 +303,6 @@ class ProgressivePanel(tk.Frame):
                     )
                     lbl_question.pack(fill=tk.X, pady=(0, 5))
                     
-                    # Detalle de comparaciones con padres
                     if not comparisons:
                         lbl_no_parents = tk.Label(
                             step_card, text="  No tiene padres directos (Nodo no alcanzable).",
@@ -322,7 +310,6 @@ class ProgressivePanel(tk.Frame):
                         )
                         lbl_no_parents.pack(fill=tk.X)
                     else:
-                        # Determinar cuál es el mejor padre del nodo actual
                         best_parent = vector_state[node_id]["padre"]
                         
                         for p_id, comp in comparisons.items():
@@ -331,7 +318,6 @@ class ProgressivePanel(tk.Frame):
                                 peso = comp["peso_arista"]
                                 suma = comp["suma"]
                                 
-                                # Formatear números
                                 acum_s = str(int(acum_p)) if acum_p.is_integer() else f"{acum_p:.1f}"
                                 peso_s = str(int(peso)) if peso.is_integer() else f"{peso:.1f}"
                                 suma_s = str(int(suma)) if suma.is_integer() else f"{suma:.1f}"
@@ -359,7 +345,6 @@ class ProgressivePanel(tk.Frame):
                             )
                             lbl_comp.pack(fill=tk.X, pady=1)
 
-                # Mostrar el estado del vector lineal caminos[] en este paso
                 vector_frame = tk.Frame(step_card, bg="#f8f9fa", bd=1, relief=tk.SOLID)
                 vector_frame.pack(fill=tk.X, pady=8)
                 
@@ -369,17 +354,14 @@ class ProgressivePanel(tk.Frame):
                 )
                 lbl_vec_title.pack(fill=tk.X, padx=8, pady=(4, 2))
                 
-                # Crear cajitas visuales para cada nodo en el vector lineal
                 boxes_container = tk.Frame(vector_frame, bg="#f8f9fa")
                 boxes_container.pack(fill=tk.X, padx=8, pady=(0, 6), anchor="w")
                 
-                # Solo mostrar los nodos ordenados
                 for nid in sorted(vector_state.keys()):
                     state = vector_state[nid]
                     padre = state["padre"]
                     acum = state["acumulado"]
                     
-                    # Formatear acumulado
                     if acum == float('inf') or acum == float('-inf'):
                         acum_s = "∞"
                     else:
@@ -387,7 +369,6 @@ class ProgressivePanel(tk.Frame):
                         
                     padre_s = str(padre) if padre else "—"
                     
-                    # Resaltar el nodo actual de este paso
                     is_current = (nid == node_id)
                     box_bg = "#e8f0fe" if is_current else "#ffffff"
                     box_outline = "#1a73e8" if is_current else "#dadce0"

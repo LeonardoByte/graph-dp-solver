@@ -21,22 +21,29 @@ class TextPanel(tk.Frame):
         )
         self.header_label.pack(fill=tk.X, padx=15)
         
-        # Frame del editor con Scrollbar
+        # Frame del editor con Scrollbar vertical y horizontal independiente
         editor_frame = tk.Frame(self, bg="#ffffff")
         editor_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
         
-        self.scrollbar = tk.Scrollbar(editor_frame)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.v_scrollbar = tk.Scrollbar(editor_frame, orient=tk.VERTICAL)
+        self.v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.h_scrollbar = tk.Scrollbar(editor_frame, orient=tk.HORIZONTAL)
+        self.h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         
         self.text_widget = tk.Text(
             editor_frame, 
-            yscrollcommand=self.scrollbar.set,
+            yscrollcommand=self.v_scrollbar.set,
+            xscrollcommand=self.h_scrollbar.set,
+            wrap=tk.NONE,  # Evita el auto-ajuste para permitir scroll horizontal
             font=("Consolas", 11), 
             bd=1, relief=tk.SOLID, 
             highlightthickness=1, highlightbackground="#dadce0"
         )
         self.text_widget.pack(fill=tk.BOTH, expand=True)
-        self.scrollbar.config(command=self.text_widget.yview)
+        
+        self.v_scrollbar.config(command=self.text_widget.yview)
+        self.h_scrollbar.config(command=self.text_widget.xview)
         
         # Botón para Cargar/Validar el Grafo
         self.btn_load = tk.Button(
@@ -63,6 +70,8 @@ class TextPanel(tk.Frame):
             # Sincronizar y redibujar el canvas
             if hasattr(self.master, "on_graph_modified"):
                 self.master.on_graph_modified()
+            elif hasattr(self.master.master, "on_graph_modified"):
+                self.master.master.on_graph_modified()
                 
             messagebox.showinfo("Grafo Cargado", "¡El grafo se ha validado y cargado correctamente en el canvas!")
         except Exception as e:
