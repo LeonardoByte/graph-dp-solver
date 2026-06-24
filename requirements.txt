@@ -1,0 +1,2 @@
+# Dependencias del proyecto
+# Para este proyecto solo se utiliza la biblioteca estándar de Python (Tkinter).
