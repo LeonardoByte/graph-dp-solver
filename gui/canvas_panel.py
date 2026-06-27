@@ -26,30 +26,29 @@ class CanvasPanel(tk.Frame):
         self._init_ui()
 
     def _init_ui(self):
-        # Frame superior para controles del Canvas
-        self.control_frame = tk.Frame(self, bg="#f5f6f8", height=40)
-        self.control_frame.pack(fill=tk.X)
-        self.control_frame.pack_propagate(False)
+        # 1. Quitamos height=40 para que el frame crezca verticalmente
+        self.control_frame = tk.Frame(self, bg="#f5f6f8")
+        self.control_frame.pack(fill=tk.X, pady=5)
         
-        # Instrucciones de uso rápidas
+        # 2. El texto de instrucciones ahora se empaqueta arriba (TOP) y centrado
         self.info_label = tk.Label(
             self.control_frame, 
             text="Clic vacío: Crear nodo | Arrastrar: Mover | Clic A y luego B: Conectar | Doble Clic: Eliminar",
             bg="#f5f6f8", fg="#5f6368", font=("Helvetica", 9, "italic")
         )
-        self.info_label.pack(side=tk.LEFT, padx=10, pady=5)
+        self.info_label.pack(side=tk.TOP, padx=10, pady=5)
         
-        # Botón para limpiar canvas
+        # 3. El botón ahora se empaqueta abajo del texto (TOP secuencial) y centrado
         self.btn_clear = tk.Button(
             self.control_frame, text="Limpiar Lienzo", 
             command=self.clear_canvas,
             bg="#f1f3f4", fg="#3c4043", relief=tk.FLAT, 
             font=("Helvetica", 9, "bold"), cursor="hand2",
-            padx=10, activebackground="#e8eaed"
+            padx=10, pady=3, activebackground="#e8eaed"
         )
-        self.btn_clear.pack(side=tk.RIGHT, padx=10, pady=5)
+        self.btn_clear.pack(side=tk.TOP, padx=10, pady=5)
         
-        # Contenedor del Canvas y barras de desplazamiento
+        # Contenedor del Canvas y barras de desplazamiento (Se mantiene igual)
         canvas_container = tk.Frame(self, bg="#ffffff")
         canvas_container.pack(fill=tk.BOTH, expand=True)
         
@@ -59,7 +58,7 @@ class CanvasPanel(tk.Frame):
         self.h_scrollbar = tk.Scrollbar(canvas_container, orient=tk.HORIZONTAL)
         self.h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         
-        # Canvas interactivo con scrollregion fija
+        # Canvas interactivo con scrollregion fija (Se mantiene igual)
         self.canvas = tk.Canvas(
             canvas_container, 
             bg="#ffffff", 
@@ -74,7 +73,7 @@ class CanvasPanel(tk.Frame):
         self.v_scrollbar.config(command=self.canvas.yview)
         self.h_scrollbar.config(command=self.canvas.xview)
         
-        # Bindings de eventos del Canvas coordinados para evitar conflictos
+        # Bindings de eventos del Canvas coordinados para evitar conflictos (Se mantiene igual)
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
